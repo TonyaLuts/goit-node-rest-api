@@ -1,16 +1,12 @@
 const contactsService = require("../services/contactsServices.js");
 const HttpError = require("../helpers/HttpError.js");
-const { createContactSchema } = require("../schemas/contactsSchemas.js");
-const { updateContactSchema } = require("../schemas/contactsSchemas.js");
 
-const getAllContacts = async (req, res) => {
+const getAllContacts = async (_, res) => {
   try {
     const result = await contactsService.listContacts();
     res.json(result);
   } catch (error) {
-    res.status(500).json({
-      message: "Server error",
-    });
+    next(error);
   }
 };
 
@@ -43,10 +39,6 @@ const deleteContact = async (req, res, next) => {
 const createContact = async (req, res, next) => {
   try {
     const { name, email, phone } = req.body;
-    const { error } = createContactSchema.validate(req.body);
-    if (error) {
-      throw HttpError(400, error.message);
-    }
     const result = await contactsService.addContact(name, email, phone);
     res.status(201).json(result);
   } catch (error) {
@@ -56,18 +48,8 @@ const createContact = async (req, res, next) => {
 
 const updateContact = async (req, res, next) => {
   try {
-    const { error } = updateContactSchema.validate(req.body);
-    if (error) {
-      throw HttpError(400, error.message);
-    }
     const { id } = req.params;
-    const { name, email, phone } = req.body;
-    const result = await contactsService.updateContactById(id, {
-      name,
-      email,
-      phone,
-    });
-
+    const result = await contactsService.updateContactById(id, req.body);
     if (!result) {
       throw HttpError(404, "Not found");
     }
