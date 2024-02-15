@@ -1,35 +1,49 @@
 const express = require("express");
-const controllers = require("../controllers/contactsControllers");
-const validateBody = require("../helpers/validateBody");
-const { schema } = require("../models/contact");
-const isValidId = require("../helpers/isValidId");
+const contactsControllers = require("../controllers/contactsControllers");
+const validateBody = require("../middlewares/validateBody");
+const { schemas } = require("../models/contact");
+const isValidId = require("../middlewares/isValidId");
+const authenticate = require("../middlewares/authenticate");
 
 const contactsRouter = express.Router();
 
-contactsRouter.get("/", controllers.getAllContacts);
+contactsRouter.get("/", authenticate, contactsControllers.getAllContacts);
 
-contactsRouter.get("/:id", isValidId, controllers.getOneContact);
+contactsRouter.get(
+  "/:id",
+  authenticate,
+  isValidId,
+  contactsControllers.getOneContact
+);
 
-contactsRouter.delete("/:id", isValidId, controllers.deleteContact);
+contactsRouter.delete(
+  "/:id",
+  authenticate,
+  isValidId,
+  contactsControllers.deleteContact
+);
 
 contactsRouter.post(
   "/",
-  validateBody(schema.createContactSchema),
-  controllers.createContact
+  authenticate,
+  validateBody(schemas.createContactSchema),
+  contactsControllers.createContact
 );
 
 contactsRouter.put(
   "/:id",
+  authenticate,
   isValidId,
-  validateBody(schema.updateContactSchema),
-  controllers.updateContact
+  validateBody(schemas.updateContactSchema),
+  contactsControllers.updateContact
 );
 
 contactsRouter.patch(
   "/:id/favorite",
+  authenticate,
   isValidId,
-  validateBody(schema.updateFavoriteSchema),
-  controllers.updateStatusContact
+  validateBody(schemas.updateFavoriteSchema),
+  contactsControllers.updateStatusContact
 );
 
 module.exports = contactsRouter;
