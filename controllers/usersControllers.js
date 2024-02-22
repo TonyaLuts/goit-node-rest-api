@@ -3,8 +3,14 @@ const HttpError = require("../helpers/HttpError.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const gravatar = require("gravatar");
+const path = require("path");
+const fs = require("fs/promises");
+var Jimp = require("jimp");
 
 const { SECRET_KEY } = process.env;
+
+const avatarsDir = path.join(__dirname, "../public/avatars");
 
 const createUser = async (req, res, next) => {
   try {
@@ -16,8 +22,13 @@ const createUser = async (req, res, next) => {
     }
 
     const hashPassword = await bcrypt.hash(password, 10);
+    const avatarURL = gravatar.url(email);
 
-    const newUser = await User.create({ ...req.body, password: hashPassword });
+    const newUser = await User.create({
+      ...req.body,
+      password: hashPassword,
+      avatarURL,
+    });
 
     res.status(201).json({
       user: {
@@ -86,9 +97,37 @@ const logout = async (req, res, next) => {
   }
 };
 
+const changeAvatar = async (req, res, next) => {
+  try {
+    const { _id } = req.user;
+    const { path: tempUpload, originalname } = req.file;
+    console.log(tempUpload);
+    const filename = `${_id}_${originalname}`;
+    const resultUpload = path.join(avatarsDir, filename);
+    await fs.rename(tempUpload, resultUpload);
+
+    Jimp.read(resultUpload, (err, avatar) => {
+      if (err) throw err;
+      avatar
+        .resize(250, 250) // resize
+        .quality(60) // set JPEG quality
+        .write(resultUpload); // save
+    });
+
+    const avatarURL = path.join("avatars", filename);
+    await User.findByIdAndUpdate(_id, { avatarURL });
+    res.json({
+      avatarURL,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createUser,
   login,
   getCurrent,
   logout,
+  changeAvatar,
 };
